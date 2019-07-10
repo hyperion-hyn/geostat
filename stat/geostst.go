@@ -16,16 +16,16 @@ import (
 )
 
 type geoInfo struct {
-	geohash string
-	host string
-	ip string
+	geohash      string
+	host         string
+	ip           string
 	country_code string
-	city string
+	city         string
 }
 
 func Stat(logFile, geoDB string) error {
 	c, err := client.NewHTTPClient(client.HTTPConfig{
-		Addr: fmt.Sprintf("http://%s:%s", viper.GetString("db.host"), viper.GetString("db.port")),
+		Addr:     fmt.Sprintf("http://%s:%s", viper.GetString("db.host"), viper.GetString("db.port")),
 		Username: viper.GetString("db.username"),
 		Password: viper.GetString("db.password"),
 	})
@@ -36,16 +36,16 @@ func Stat(logFile, geoDB string) error {
 	defer c.Close()
 
 	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
-		Database: viper.GetString("db.database"),
+		Database:  viper.GetString("db.database"),
 		Precision: "s",
 	})
 
 	t, err := tail.TailFile(logFile, tail.Config{
-		Follow: true,
-		ReOpen: true,
+		Follow:    true,
+		ReOpen:    true,
 		MustExist: false,
 		Location:  &tail.SeekInfo{Offset: 0, Whence: 2},
-		Poll: true,
+		Poll:      true,
 	})
 
 	if err != nil {
@@ -81,11 +81,11 @@ func Stat(logFile, geoDB string) error {
 		}
 
 		tags := map[string]string{
-			"geohash": geoinfo.geohash,
-			"host": geoinfo.host,
-			"ip": geoinfo.ip,
+			"geohash":      geoinfo.geohash,
+			"host":         geoinfo.host,
+			"ip":           geoinfo.ip,
 			"country_code": geoinfo.country_code,
-			"city": geoinfo.city,
+			"city":         geoinfo.city,
 		}
 		fields := map[string]interface{}{
 			"count": 1,
@@ -138,11 +138,11 @@ func geostat(ip net.IP, geoDB string) (geoInfo, error) {
 	}
 
 	geo = geoInfo{
-		geohash: geohash.Encode(record.Location.Latitude, record.Location.Longitude),
-		host: host,
-		ip: ip.String(),
+		geohash:      geohash.Encode(record.Location.Latitude, record.Location.Longitude),
+		host:         host,
+		ip:           ip.String(),
 		country_code: record.Country.IsoCode,
-		city: city,
+		city:         city,
 	}
 
 	return geo, nil

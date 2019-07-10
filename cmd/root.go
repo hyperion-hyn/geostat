@@ -16,99 +16,97 @@ limitations under the License.
 package cmd
 
 import (
-  "fmt"
-  "github.com/hyperion-hyn/geostat/stat"
-  "github.com/spf13/cobra"
-  "os"
-  "path/filepath"
-  "strings"
+	"fmt"
+	"github.com/hyperion-hyn/geostat/stat"
+	"github.com/spf13/cobra"
+	"os"
+	"path/filepath"
+	"strings"
 
-  "github.com/spf13/viper"
+	"github.com/spf13/viper"
 )
-
 
 var (
-  cfgFile string
-  home string
+	cfgFile string
+	home    string
 )
+
 const (
-  FlagLogFile = "logfile"
-  FlagGeoDBFile = "geodb"
+	FlagLogFile   = "logfile"
+	FlagGeoDBFile = "geodb"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-  Use:   "geostat",
-  Short: "geostat",
-  Long: `golang geostat for influxdb`,
-  // Uncomment the following line if your bare application
-  // has an action associated with it:
-  RunE: func(cmd *cobra.Command, args []string) error {
-    log, err := cmd.Flags().GetString(FlagLogFile)
-    if err != nil {
-      return err
-    }
-    geoDB, err := cmd.Flags().GetString(FlagGeoDBFile)
+	Use:   "geostat",
+	Short: "geostat",
+	Long:  `golang geostat for influxdb`,
+	// Uncomment the following line if your bare application
+	// has an action associated with it:
+	RunE: func(cmd *cobra.Command, args []string) error {
+		log, err := cmd.Flags().GetString(FlagLogFile)
+		if err != nil {
+			return err
+		}
+		geoDB, err := cmd.Flags().GetString(FlagGeoDBFile)
 
-    err = stat.Stat(log, geoDB)
+		err = stat.Stat(log, geoDB)
 
-    return err
-  },
+		return err
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-  if err := rootCmd.Execute(); err != nil {
-    fmt.Println(err)
-    os.Exit(1)
-  }
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
 func init() {
-  cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initConfig)
 
-  // Here you will define your flags and configuration settings.
-  // Cobra supports persistent flags, which, if defined here,
-  // will be global for your application.
+	// Here you will define your flags and configuration settings.
+	// Cobra supports persistent flags, which, if defined here,
+	// will be global for your application.
 
-  rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $PWD/geostat.json)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $PWD/geostat.json)")
 
-  // Cobra also supports local flags, which will only run
-  // when this action is called directly.
-  rootCmd.Flags().String(FlagLogFile, "/var/log/nginx/access.log", "access log file")
+	// Cobra also supports local flags, which will only run
+	// when this action is called directly.
+	rootCmd.Flags().String(FlagLogFile, "/var/log/nginx/access.log", "access log file")
 
-  rootCmd.Flags().String(FlagGeoDBFile, home + "GeoLite2-City.mmdb", "geoip database file")
+	rootCmd.Flags().String(FlagGeoDBFile, home+"GeoLite2-City.mmdb", "geoip database file")
 }
-
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-  if cfgFile != "" {
-    // Use config file from the flag.
-    viper.SetConfigFile(cfgFile)
-  } else {
-    // Find home directory.
-    var err error
-    currDir, err := filepath.Abs("./")
-    if err != nil {
-      fmt.Println(err)
-      os.Exit(1)
-    }
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+	} else {
+		// Find home directory.
+		var err error
+		currDir, err := filepath.Abs("./")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
-    // Search config in home directory with name "geostat" (without extension).
-    viper.AddConfigPath(currDir)
-    viper.SetConfigType("json")
-    viper.SetConfigName("geostat")
-    replacer := strings.NewReplacer(".", "_")
-    viper.SetEnvKeyReplacer(replacer)
-  }
+		// Search config in home directory with name "geostat" (without extension).
+		viper.AddConfigPath(currDir)
+		viper.SetConfigType("json")
+		viper.SetConfigName("geostat")
+		replacer := strings.NewReplacer(".", "_")
+		viper.SetEnvKeyReplacer(replacer)
+	}
 
-  viper.AutomaticEnv() // read in environment variables that match
+	viper.AutomaticEnv() // read in environment variables that match
 
-  // If a config file is found, read it in.
-  if err := viper.ReadInConfig(); err == nil {
-    fmt.Println("Using config file:", viper.ConfigFileUsed())
-  }
+	// If a config file is found, read it in.
+	if err := viper.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
 }
-

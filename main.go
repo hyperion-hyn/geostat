@@ -16,9 +16,9 @@ limitations under the License.
 package main
 
 import (
-    "github.com/hyperion-hyn/geostat/cmd"
+	"github.com/hyperion-hyn/geostat/cmd"
 )
 
 func main() {
-  cmd.Execute()
+	cmd.Execute()
 }
