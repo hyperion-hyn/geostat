@@ -2,17 +2,16 @@ package stat
 
 import (
 	"fmt"
+	"github.com/hpcloud/tail"
+	client "github.com/influxdata/influxdb1-client/v2"
+	"github.com/mmcloughlin/geohash"
+	"github.com/oschwald/geoip2-golang"
 	"github.com/spf13/viper"
 	"log"
 	"net"
 	"os"
 	"regexp"
 	"time"
-
-	"github.com/hpcloud/tail"
-	"github.com/influxdata/influxdb1-client/v2"
-	"github.com/mmcloughlin/geohash"
-	"github.com/oschwald/geoip2-golang"
 )
 
 type geoInfo struct {
@@ -24,21 +23,19 @@ type geoInfo struct {
 }
 
 func Stat(logFile, geoDB string) error {
-	c, err := client.NewHTTPClient(client.HTTPConfig{
-		Addr:     fmt.Sprintf("http://%s:%s", viper.GetString("db.host"), viper.GetString("db.port")),
-		Username: viper.GetString("db.username"),
-		Password: viper.GetString("db.password"),
+	c, err := client.NewUDPClient(client.UDPConfig{
+		Addr: fmt.Sprintf("%s:%s", viper.GetString("db.host"), viper.GetString("db.port")),
 	})
+	defer c.Close()
 	if err != nil {
 		log.Panicf("Error creating InfluxDB Client: %v", err.Error())
 	}
 
-	defer c.Close()
-
-	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
-		Database:  viper.GetString("db.database"),
-		Precision: "s",
-	})
+	geoDBC, err := geoip2.Open(geoDB)
+	defer geoDBC.Close()
+	if err != nil {
+		log.Panicf("error, open GeoLite2-City.mmdb get error, %v\n", err)
+	}
 
 	t, err := tail.TailFile(logFile, tail.Config{
 		Follow:    true,
@@ -49,12 +46,15 @@ func Stat(logFile, geoDB string) error {
 	})
 
 	if err != nil {
-		fmt.Println("tail file err:", err)
-		return err
+		log.Panicf("tail file err:%v\n", err)
 	}
 
-	var msg *tail.Line
-	var ok bool
+	var (
+		msg          *tail.Line
+		ok           bool
+		pts                = make([]*client.Point, 0)
+		lastDataTime       = time.Now().Unix()
+	)
 	for true {
 		msg, ok = <-t.Lines
 		if !ok {
@@ -75,48 +75,24 @@ func Stat(logFile, geoDB string) error {
 			continue
 		}
 
-		geoinfo, err := geostat(ip, geoDB)
+		geoinfo, err := geostat(ip, geoDBC)
 		if err != nil {
 			continue
 		}
 
-		tags := map[string]string{
-			"geohash":      geoinfo.geohash,
-			"host":         geoinfo.host,
-			"ip":           geoinfo.ip,
-			"country_code": geoinfo.country_code,
-			"city":         geoinfo.city,
-		}
-		fields := map[string]interface{}{
-			"count": 1,
-		}
-		pt, err := client.NewPoint(viper.GetString("db.measurement"), tags, fields, time.Now())
+		pts, err = saveToInfluxd(pts, c, geoinfo, lastDataTime)
 		if err != nil {
-			fmt.Printf("new influxdb PT get error:%v\n", err)
 			continue
 		}
-		bp.AddPoint(pt)
-
-		if err := c.Write(bp); err != nil {
-			fmt.Printf("write influxdb data get error:%v\n", err)
-			continue
-		}
+		lastDataTime = time.Now().Unix()
 	}
 
 	return nil
 }
 
-func geostat(ip net.IP, geoDB string) (geoInfo, error) {
+func geostat(ip net.IP, geoDBC *geoip2.Reader) (geoInfo, error) {
 	geo := geoInfo{}
-	db, err := geoip2.Open(geoDB)
-	if err != nil {
-		fmt.Printf("error, open GeoLite2-City.mmdb get error, %v\n", err)
-
-		return geo, err
-	}
-	defer db.Close()
-
-	record, err := db.City(ip)
+	record, err := geoDBC.City(ip)
 	if err != nil {
 		fmt.Printf("error, parsing IP geo info get error, %v\n", err)
 
@@ -166,4 +142,52 @@ func isPublicIP(IP net.IP) bool {
 	}
 
 	return false
+}
+
+func saveToInfluxd(pts []*client.Point, c client.Client, geoinfo geoInfo, lastDataTime int64) ([]*client.Point, error) {
+	pt, err := client.NewPoint(viper.GetString("db.measurement"), map[string]string{
+		"geohash":      geoinfo.geohash,
+		"host":         geoinfo.host,
+		"ip":           geoinfo.ip,
+		"country_code": geoinfo.country_code,
+		"city":         geoinfo.city,
+	}, map[string]interface{}{
+		"count": 1,
+	}, time.Now())
+
+	if err != nil {
+		log.Printf("new influxdb PT get error:%v\n", err)
+
+		return pts, err
+	}
+	pts = append(pts, pt)
+
+	timeInt := time.Now().Unix() - lastDataTime
+	if len(pts) >= viper.GetInt("db.full_size") || timeInt >= viper.GetInt64("db.insert_tim_int") {
+		// insert into influxd
+		bp, err := client.NewBatchPoints(client.BatchPointsConfig{
+			Database: viper.GetString("db.database"),
+		})
+
+		if err != nil {
+			log.Printf("new influxd bath points get error: %v", err)
+
+			return pts, err
+		}
+
+		bp.AddPoints(pts)
+
+		if err := c.Write(bp); err != nil {
+			log.Printf("write influxdb data get error:%v\n", err)
+
+			return pts, err
+		}
+
+		// reset pts
+		pts = make([]*client.Point, 0)
+	}
+
+	lastDataTime = time.Now().Unix()
+
+	return pts, nil
 }

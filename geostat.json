@@ -1,10 +1,12 @@
 {
   "db": {
     "host": "127.0.0.1",
-    "port": "8086",
+    "port": "8089",
     "database": "telegraf",
     "username": "",
     "password": "",
-    "measurement": "geodata"
+    "measurement": "geodata",
+    "full_size": 100,
+    "insert_tim_int": 10
   }
 }

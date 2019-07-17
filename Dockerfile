@@ -29,7 +29,7 @@ COPY --from=builder $APP_STORE_DIR/geostat /usr/bin/geostat
 
 #copy config file
 COPY ./geostat.json $APP_ETC_DIR/geostat.json
-COPY ./GeoIP2-City.mmdb $APP_ETC_DIR/GeoIP2-City.mmdb
+COPY ./GeoIP2-City.mmdb $APP_ETC_DIR/GeoLite2-City.mmdb
 
 WORKDIR $APP_ETC_DIR
-ENTRYPOINT geostat --logfile /var/log/geostat/access.log --geodb $APP_ETC_DIR/GeoLite2-City.mmdb
+ENTRYPOINT ["/usr/bin/geostat", "--logfile", "/var/log/geostat/access.log", "--geodb", "/etc/geostat/GeoLite2-City.mmdb"]

@@ -71,14 +71,6 @@
   version = "v1.8.1"
 
 [[projects]]
-  digest = "1:5d231480e1c64a726869bc4142d270184c419749d34f167646baa21008eb0a79"
-  name = "github.com/mitchellh/go-homedir"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "af06845cf3004701891bf4fdb884bfe4920b3727"
-  version = "v1.1.0"
-
-[[projects]]
   digest = "1:53bc4cd4914cd7cd52139990d5170d6dc99067ae31c56530621b18b35fc30318"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
@@ -109,6 +101,17 @@
   pruneopts = "UT"
   revision = "2905694a1b00c5574f1418a7dbf8a22a7d247559"
   version = "v1.3.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:7680a2a83193743b632fafaedf48162c0dbf30afe9543bb9506167b0bf504fa4"
+  name = "github.com/papertrail/go-tail"
+  packages = [
+    ".",
+    "follower",
+  ]
+  pruneopts = "UT"
+  revision = "973c153b04319fc4604d847b09861a5730cbbde2"
 
 [[projects]]
   digest = "1:93131d8002d7025da13582877c32d1fc302486775a1b06f62241741006428c5e"
@@ -224,9 +227,9 @@
   input-imports = [
     "github.com/hpcloud/tail",
     "github.com/influxdata/influxdb1-client/v2",
-    "github.com/mitchellh/go-homedir",
     "github.com/mmcloughlin/geohash",
     "github.com/oschwald/geoip2-golang",
+    "github.com/papertrail/go-tail",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
   ]

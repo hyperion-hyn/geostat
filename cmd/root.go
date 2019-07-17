@@ -44,13 +44,12 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log, err := cmd.Flags().GetString(FlagLogFile)
+		logFile, err := cmd.Flags().GetString(FlagLogFile)
 		if err != nil {
 			return err
 		}
 		geoDB, err := cmd.Flags().GetString(FlagGeoDBFile)
-
-		err = stat.Stat(log, geoDB)
+		err = stat.Stat(logFile, geoDB)
 
 		return err
 	},
