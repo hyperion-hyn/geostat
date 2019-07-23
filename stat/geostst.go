@@ -50,21 +50,18 @@ func Stat(logFile, geoDB string) error {
 	}
 
 	var (
-		msg          *tail.Line
-		ok           bool
 		pts                = make([]*client.Point, 0)
 		lastDataTime       = time.Now().Unix()
 	)
-	for true {
-		msg, ok = <-t.Lines
-		if !ok {
-			fmt.Printf("tail file closed and reopen, filename:%s\n", t.Filename)
+	for line := range t.Lines {
+		if line.Err != nil {
+			log.Println(fmt.Sprintf("tail file get error, reopen %s, err: %s\n", t.Filename, line.Err))
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 
 		ipRegexp := regexp.MustCompile(`([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
-		ipStr := ipRegexp.FindString(msg.Text)
+		ipStr := ipRegexp.FindString(line.Text)
 
 		if ipStr == "" {
 			continue
