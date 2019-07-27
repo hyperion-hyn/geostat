@@ -1,35 +1,25 @@
-# STEP 1 build executable binary from alpine:golang
-FROM golang:alpine as builder
+FROM golang:1.12-alpine3.9 as builder
 
-ENV APP_RUN_DIR=/go/bin/geostat/
-# Install git
+# install software packages 
 RUN apk add --update --no-cache git build-base
 
 # copy code
 COPY ./ $GOPATH/src/github.com/hyperion-hyn/geostat
 
-#build the dmapper server and crontab
+# build the dmapper server and crontab
 WORKDIR $GOPATH/src/github.com/hyperion-hyn/geostat
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-w -s" -o $APP_RUN_DIR/geostat \
-        && rm -rf $GOPATH/src/github.com/hyperion-hyn/
+RUN GO111MODULE=on go mod vendor && go build -a -ldflags="-w -s" && go install
 
-# step 2 build a small image from alpine
-FROM alpine
+###
+FROM alpine:3.9
 
-ENV APP_ETC_DIR=/etc/geostat/
-ENV APP_STORE_DIR=/go/bin/geostat/
-
-# run mkdir
-RUN mkdir -p $APP_ETC_DIR
-
-# install supervisor
+# install software packages
 RUN apk add --update --no-cache ca-certificates
-# copy file from builder
-COPY --from=builder $APP_STORE_DIR/geostat /usr/bin/geostat
 
-#copy config file
-COPY ./geostat.json $APP_ETC_DIR/geostat.json
-COPY ./GeoIP2-City.mmdb $APP_ETC_DIR/GeoLite2-City.mmdb
+# copy files from builder
+COPY --from=builder /go/bin/geostat /usr/bin/geostat
 
-WORKDIR $APP_ETC_DIR
-ENTRYPOINT ["/usr/bin/geostat", "--logfile", "/var/log/geostat/access.log", "--geodb", "/etc/geostat/GeoLite2-City.mmdb"]
+# copy config file
+COPY ./geostat.json ./GeoIP2-City.mmdb /etc/geostat/
+
+ENTRYPOINT ["/usr/bin/geostat", "--config", "/etc/geostat/geostat.json", "--logfile", "/var/log/geostat/access.log", "--geodb", "/etc/geostat/GeoIP2-City.mmdb"]
