@@ -25,8 +25,8 @@ type geoInfo struct {
 var createdDB = false
 
 func Stat(logFile, geoDB string) error {
-	c, err := client.NewUDPClient(client.UDPConfig{
-		Addr: fmt.Sprintf("%s:%s", viper.GetString("db.host"), viper.GetString("db.port")),
+	c, err := client.NewHTTPClient(client.HTTPConfig{
+		Addr: fmt.Sprintf("http://%s:%s", viper.GetString("db.host"), viper.GetString("db.port")),
 	})
 	defer c.Close()
 	if err != nil {
@@ -143,18 +143,10 @@ func isPublicIP(IP net.IP) bool {
 	return false
 }
 
-func createInfluxDB() {
-	c, err := client.NewHTTPClient(client.HTTPConfig{
-		Addr: fmt.Sprintf("http://%s:%s", viper.GetString("db.host"), viper.GetString("db.tcp_port")),
-	})
-	if err != nil {
-		log.Panicf("Error creating InfluxDB Client: %v", err.Error())
-	}
-	defer c.Close()
-
+func createInfluxDB(c client.Client) {
 	q := client.NewQuery(fmt.Sprintf("CREATE DATABASE %s", viper.GetString("db.database")), "", "")
 	if response, err := c.Query(q); err != nil || response.Error() != nil {
-		log.Panicf("Error creating InfluxDB databsse: %v, %v", err, response.Error())
+		log.Printf("Error creating InfluxDB databsse: %v\n", err)
 	}
 
 	q = client.NewQuery(
@@ -163,10 +155,9 @@ func createInfluxDB() {
 			viper.GetString("db.database"),
 			viper.GetString("db.retention_policy.value")), "", "")
 	if response, err := c.Query(q); err != nil || response.Error() != nil {
-		log.Panicf("Error creating InfluxDB databsse retention policy, db: %s, %v, %v",
+		log.Printf("Error creating InfluxDB databsse retention policy, db: %s, %v\n",
 			viper.GetString("db.database"),
-			err,
-			response.Error())
+			err)
 	}
 
 	createdDB = true
@@ -193,7 +184,7 @@ func saveToInfluxd(pts []*client.Point, c client.Client, geoinfo geoInfo, lastDa
 	timeInt := time.Now().Unix() - lastDataTime
 	if len(pts) >= viper.GetInt("db.full_size") || timeInt >= viper.GetInt64("db.insert_tim_int") {
 		if !createdDB {
-			createInfluxDB()
+			createInfluxDB(c)
 		}
 		// insert into influxd
 		bp, err := client.NewBatchPoints(client.BatchPointsConfig{
