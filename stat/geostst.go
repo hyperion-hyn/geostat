@@ -147,6 +147,8 @@ func createInfluxDB(c client.Client) {
 	q := client.NewQuery(fmt.Sprintf("CREATE DATABASE %s", viper.GetString("db.database")), "", "")
 	if response, err := c.Query(q); err != nil || response.Error() != nil {
 		log.Printf("Error creating InfluxDB databsse: %v\n", err)
+
+		return
 	}
 
 	q = client.NewQuery(
@@ -158,6 +160,8 @@ func createInfluxDB(c client.Client) {
 		log.Printf("Error creating InfluxDB databsse retention policy, db: %s, %v\n",
 			viper.GetString("db.database"),
 			err)
+
+		return
 	}
 
 	createdDB = true
