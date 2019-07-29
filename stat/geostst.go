@@ -2,16 +2,17 @@ package stat
 
 import (
 	"fmt"
-	"github.com/hpcloud/tail"
-	client "github.com/influxdata/influxdb1-client/v2"
-	"github.com/mmcloughlin/geohash"
-	"github.com/oschwald/geoip2-golang"
-	"github.com/spf13/viper"
 	"log"
 	"net"
 	"os"
 	"regexp"
 	"time"
+
+	"github.com/hpcloud/tail"
+	client "github.com/influxdata/influxdb1-client/v2"
+	"github.com/mmcloughlin/geohash"
+	"github.com/oschwald/geoip2-golang"
+	"github.com/spf13/viper"
 )
 
 type geoInfo struct {
@@ -52,8 +53,8 @@ func Stat(logFile, geoDB string) error {
 	}
 
 	var (
-		pts                = make([]*client.Point, 0)
-		lastDataTime       = time.Now().Unix()
+		pts          = make([]*client.Point, 0)
+		lastDataTime = time.Now().Unix()
 	)
 	for line := range t.Lines {
 		if line.Err != nil {
@@ -143,26 +144,6 @@ func isPublicIP(IP net.IP) bool {
 	return false
 }
 
-func createInfluxDB(c client.Client) {
-	q := client.NewQuery(fmt.Sprintf("CREATE DATABASE %s", viper.GetString("db.database")), "", "")
-	if response, err := c.Query(q); err != nil || response.Error() != nil {
-		log.Printf("Error creating InfluxDB databsse: %v\n", err)
-	}
-
-	q = client.NewQuery(
-		fmt.Sprintf("CREATE RETENTION POLICY \"%s\" ON \"%s\" DURATION %s REPLICATION 1 DEFAULT",
-			viper.GetString("db.retention_policy.name"),
-			viper.GetString("db.database"),
-			viper.GetString("db.retention_policy.value")), "", "")
-	if response, err := c.Query(q); err != nil || response.Error() != nil {
-		log.Printf("Error creating InfluxDB databsse retention policy, db: %s, %v\n",
-			viper.GetString("db.database"),
-			err)
-	}
-
-	createdDB = true
-}
-
 func saveToInfluxd(pts []*client.Point, c client.Client, geoinfo geoInfo, lastDataTime int64) ([]*client.Point, error) {
 	pt, err := client.NewPoint(viper.GetString("db.measurement"), map[string]string{
 		"geohash":      geoinfo.geohash,
@@ -183,9 +164,6 @@ func saveToInfluxd(pts []*client.Point, c client.Client, geoinfo geoInfo, lastDa
 
 	timeInt := time.Now().Unix() - lastDataTime
 	if len(pts) >= viper.GetInt("db.full_size") || timeInt >= viper.GetInt64("db.insert_tim_int") {
-		if !createdDB {
-			createInfluxDB(c)
-		}
 		// insert into influxd
 		bp, err := client.NewBatchPoints(client.BatchPointsConfig{
 			Database: viper.GetString("db.database"),
