@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hpcloud/tail"
 	client "github.com/influxdata/influxdb1-client/v2"
+	"github.com/influxdata/tail"
 	"github.com/mmcloughlin/geohash"
 	"github.com/oschwald/geoip2-golang"
 	"github.com/spf13/viper"

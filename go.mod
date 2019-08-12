@@ -3,13 +3,13 @@ module github.com/hyperion-hyn/geostat
 go 1.12
 
 require (
-	github.com/hpcloud/tail v0.0.0-20180514194441-a1dbeea552b7
+	github.com/hpcloud/tail v0.0.0-20180514194441-a1dbeea552b7 // indirect
 	github.com/influxdata/influxdb1-client v0.0.0-20190402204710-8ff2fc3824fc
+	github.com/influxdata/tail v1.0.0
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mmcloughlin/geohash v0.9.0
 	github.com/oschwald/geoip2-golang v1.3.0
 	github.com/oschwald/maxminddb-golang v1.3.1 // indirect
-	github.com/papertrail/go-tail v0.0.0-20180509224916-973c153b0431 // indirect
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v0.0.5
